@@ -1,2 +1,3 @@
-# a-simple-minimalistic-text-editor
-a simple minimalistic command line interface text editor with autocorrect and autocomplete features; and more features are being added everyday
+#author: edwin ignas
+a simple minimalistic command-line interface text editor written in C.
+For now, it has supports for features like autocorrect and error checking; other features such as autocomplete will continue to be added in the future as development continues.
