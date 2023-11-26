@@ -1,0 +1,11 @@
+ Usage: voom [flags] [voom options]
+
+  -help             displays all commands Voom takes
+  -h                same as -help
+  voom              opens voom with no arguments
+  voom <file>       opens the file in voom text editor
+  voom -r <file>    opens a file with read-only option
+  voom -w <file>    opens f
+
+  If the file provided as argument doesn`t exist in the current
+  directory, voom creates a new file with the specified name.
