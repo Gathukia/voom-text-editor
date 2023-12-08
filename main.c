@@ -11,10 +11,10 @@
 #include "param.h"
 #define EXIT_SUCCESS 0
 //#define help "-help"
-WINDOW* mainwindow;
 void sig_handler(int sig);
 int editor();
 int startVoom(){
+    voomsetup_f = true;
     int x,y,a,b,c,d,e,f;
     c = 0; 
     char voom[][50] = {"_ _    _ _ _ __    _________      ___","\\  \\  /  //    \\  /    \\ |  \\    /   |"," \\  \\/  //  __  \\/  __  \\|   \\></    |","  \\    / \\ (__) /\\ (__) /|  *\\   *\\  |","   \\__/   \\_ __/  \\____/ |_/  \\_/  \\_|"} ;
@@ -78,16 +78,16 @@ int voomHelp(){
     fclose(vhelp);
     return EXIT_SUCCESS;
 }
-int renderer(char* argv[]){
+
+struct buffer renderer(char* argv[]){
     FILE* fptr;
     char char_sz;
+    int n = 40000;
     char count = 0;
-    int n = 10000;
-    char ch,cha;
+    char ch;
     fptr = fopen(argv[1],"r+");
     char* buffer = (char*)malloc(n * sizeof(char));
     char* buffer3 = buffer;
-    char** buffer2 = &buffer;
     while(ch != EOF){
         ch = fgetc(fptr);
         if(ch == EOF)break;
@@ -96,22 +96,41 @@ int renderer(char* argv[]){
         count++;
         //*buffer2++;
     }
-int y = 0;
-int x = 5;
 fclose(fptr);
-
-while(buffer != buffer3){
-    cha = *buffer;
-    move(y,x);
-    printw("%c",cha);
-    x++;
-    if(x == (COLS - 1)){
-        y++;
-        x = 5;
-    }
-    buffer++;
+struct buffer mybuffer;
+mybuffer.buffer = buffer;
+mybuffer.buffer3 = buffer3;
+return mybuffer;
 }
-refresh();
+
+int workplace_edit(){
+    wrefresh(workplace_win);
+    char cha;
+    char count = 0;
+    if(filep[1] != NULL){
+    char *buffer,*buffer2,*buffer3;
+    struct buffer workbuffer;
+    workbuffer = renderer(filep);
+    buffer = workbuffer.buffer;
+    buffer3 = workbuffer.buffer3;
+    buffer2 = buffer;
+    int x,y;
+    x = y = 0;
+    while(buffer2 != buffer3){
+        cha = *buffer2;
+            mvwprintw(workplace_win,y,x,"%c",cha);
+            x++;
+            if(x == (workplace_w - 1 )){
+                y++;
+                x = 0;
+            }
+            buffer2++;
+        }
+    wrefresh(workplace_win);
+    free(buffer);
+    wrefresh(workplace_win);
+}
+
 return EXIT_SUCCESS;
 }
 
@@ -128,39 +147,35 @@ return EXIT_SUCCESS;
 
 // }
 
-int workplace(){
-    
-
-
-
-
+int sidebar_edit(){
     int dot_count,line_count,ed_lx,y,x;
     line_count = dot_count = 0;
     y = LINES;
     x = COLS;
-    ed_l = y - 2;
+    ed_l = sidebar_h;
     int ed_lx1,ed_lx2;
-    ed_lx = 3;
+    ed_lx1 = ed_lx2 = 0;
+    ed_lx = (sidebar_w - 1);
     while(line_count != ed_l){
-        move(dot_count,0);
-        printw(".");
+        wmove(sidebar_win,dot_count,0);
+        wprintw(sidebar_win,"~");
         if(line_count < 10){
-            move(line_count,ed_lx);
-            printw("%d",line_count);
+            wmove(sidebar_win,line_count,(ed_lx - 1));
+            wprintw(sidebar_win,"%d",line_count);
         }else if((10 <= line_count) && (line_count < 100)){
-            ed_lx1 = ed_lx - 1;
-            move(line_count,ed_lx1);
-            printw("%d",line_count);
+            ed_lx1 = ed_lx - 2;
+            wmove(sidebar_win,line_count,ed_lx1);
+            wprintw(sidebar_win,"%d",line_count);
         }else if((10 <= line_count) && (line_count < 1000)){
-            ed_lx2 = ed_lx - 1;
-            move(line_count,ed_lx2);
-            printw("%d",line_count);
+            ed_lx2 = ed_lx - 3;
+            wmove(sidebar_win,line_count,ed_lx2);
+            wprintw(sidebar_win,"%d",line_count);
             }
         dot_count++;
         line_count++;
     }
 
-refresh();
+wrefresh(sidebar_win);
 return EXIT_SUCCESS;
 }
 int editor()
@@ -188,25 +203,51 @@ int editor()
     refresh(); 
 return EXIT_SUCCESS;
 }
+int status_edit(){
+    wrefresh(status_win);
+    int r,t;
+    r = 20;
+    t = 60;
+    char *cmd= "Voom=> ";
+    cmd_p = (status_h - 1);
+    vm_sy = (status_h - 2);
+    vm_sx = 0;
+    ln_ny = (status_h - 2);
+    ln_nx = (COLS - 20);
+    mvwprintw(status_win,cmd_p,0,"%s",cmd);
+    mvwprintw(status_win,vm_sy,vm_sx,"normal");
+    mvwprintw(status_win,ln_ny,ln_nx,"line %d, column %d",r,t);
+    wrefresh(status_win);
+return EXIT_SUCCESS;
+}
 
 // sets up voom window and the diffrent parameters required;
 
 int voomWindow_setup(){
-    if(setup_f == true){
-        delwin(mainwindow);
-        setup_f = false;
-    }
     wrefresh(stdscr);
     getmaxyx(stdscr,LINES,COLS);
-    editor();
-    workplace();
+    //editor();
+    //workplace();
     return EXIT_SUCCESS;
 }
-int setup_screen(){
+int terminal_start(){
     if (initscr() == NULL){
         fprintf(stderr, "Could not initialize ncurses!\n");
         exit(EXIT_FAILURE);
+    }
+    clear();
+    cbreak();
+    noecho();
+    keypad(stdscr, TRUE);
+    refresh();
+    return EXIT_SUCCESS;
 }
+void terminal_stop(){
+    endwin();
+}
+
+int setup_screen(){
+    terminal_start();
     if(has_colors()){
         start_color();
         init_color(COLOR_RED,17,64,86);
@@ -225,18 +266,75 @@ int setup_screen(){
 clear();
 return EXIT_SUCCESS;
 }
+int windows_setup(){
+    status_h = 2;
+    status_w = COLS;
+    status_y = (LINES - status_h);
+    status_x = 0;
+    sidebar_h = status_y;
+    sidebar_w = 5;
+    sidebar_y = 0;
+    sidebar_x = 0;
+    workplace_h = status_y;
+    workplace_w = (COLS) - sidebar_w;
+    workplace_y = 0;
+    workplace_x = sidebar_w;
+    status_win = newwin(status_h,status_w,status_y,status_x);
+    sidebar_win = newwin(sidebar_h,sidebar_w,sidebar_y,sidebar_x);
+    workplace_win = newwin(workplace_h,workplace_w,workplace_y,workplace_x);
+return EXIT_SUCCESS;
+}
+
+void reset_parameters(){
+    wrefresh(stdscr);
+    getmaxyx(stdscr,LINES,COLS);
+    status_h = 2;
+    status_w = COLS;
+    status_y = (LINES - status_h);
+    status_x = 0;
+    sidebar_h = status_y;
+    sidebar_w = 4;
+    sidebar_y = 0;
+    sidebar_x = 0;
+    workplace_h = status_y;
+    workplace_w = (COLS - 1) - sidebar_w;
+    workplace_y = 0;
+    workplace_x = sidebar_w;
+
+}
+int start_processes(){
+    if(setup_f != true){
+        windows_setup();
+    }else if((setup_f == true) && (voomsetup_f == true)){
+        windows_setup();
+        voomWindow_setup();
+    }else{
+        reset_parameters();
+    }
+    sidebar_edit();
+    status_edit();
+    workplace_edit();
+    setup_f = false;
+    voomsetup_f = false;
+    return EXIT_SUCCESS;
+}
 void sig_handler(int sig)
 {
   if (SIGWINCH == sig) {
     setup_f = true;
-    if(setup_f == true){
-        endwin();
-        setup_f = false;
-    }
-    endwin();
+    terminal_stop();
     setup_screen();
     voomWindow_setup();
-    renderer(filep);
+    int y = LINES;
+    int x = COLS;
+    wresize(status_win,y,x);
+    wclear(status_win);
+    wresize(sidebar_win,y,x);
+    wclear(sidebar_win);
+    wresize(workplace_win,y,x);
+    wclear(workplace_win);
+    start_processes();
+    //renderer(filep);
 }
 }
 int main(int argc,char **argv){
@@ -247,24 +345,22 @@ int main(int argc,char **argv){
     filep = argv;
     //FILE* edit = fopen(argv[1],"w+");
     signal(SIGWINCH,sig_handler);
-    
+    //buffer = (char*)malloc(n * sizeof(char));
     if((argc > 1) && ((strcmp(v,help) == 0)||(strcmp(v,help2) == 0))){
         voomHelp();
     }else{
         setup_screen();
         if(argc == 1){
-        while(x != 3){
             startVoom();
-            delay(7000);
-            printw("%d curse init",x);
-            x++;
-        }
-        goto end;
+            while(getch() == 10){
+                start_processes();
+            }
         }
     if(argc > 1){
-        voomWindow_setup();
-        renderer(filep);
-        delay(3000);
+        start_processes();
+        //voomWindow_setup();
+        //renderer(filep);
+        delay(30000);
     }
     }
  /*if(argc == 1){
@@ -292,7 +388,7 @@ while(getch() != 10){
     voomWindow_setup(filep);
     delay(700);
 }*/
-end:    
-endwin();
+end:   
+terminal_stop();
 return 0;
 }
